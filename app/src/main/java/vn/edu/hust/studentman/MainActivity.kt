@@ -1,7 +1,11 @@
 package vn.edu.hust.studentman
 
 import android.os.Bundle
+import android.view.ContextMenu
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
@@ -54,6 +58,57 @@ class MainActivity : AppCompatActivity() {
     findViewById<Button>(R.id.btn_add_new).setOnClickListener {
       showAddEditDialog()
     }
+
+    // Đăng ký context menu cho RecyclerView
+//    registerForContextMenu(findViewById(R.id.recycler_view_students))
+  }
+
+  // Hiển thị menu tùy chọn khi nhấn giữ vào item trong RecyclerView
+  override fun onCreateContextMenu(menu: ContextMenu, v: View, menuInfo: ContextMenu.ContextMenuInfo?) {
+    super.onCreateContextMenu(menu, v, menuInfo)
+    menuInflater.inflate(R.menu.context_menu, menu)
+  }
+
+  // Xử lý sự kiện khi chọn một mục trong context menu
+  override fun onContextItemSelected(item: MenuItem): Boolean {
+    val position = (item.menuInfo as RecyclerViewContextMenuInfo).position
+    return when (item.itemId) {
+      R.id.context_edit -> {
+        onEditClicked(students[position], position)
+        true
+      }
+      R.id.context_remove -> {
+        onDeleteClicked(students[position], position)
+        true
+      }
+      else -> super.onContextItemSelected(item)
+    }
+  }
+
+  private fun onEditClicked(student: StudentModel, position: Int) {
+    // Mở dialog để chỉnh sửa thông tin sinh viên
+    showAddEditDialog(student, position)
+  }
+
+  private fun onDeleteClicked(student: StudentModel, position: Int) {
+    // Xóa sinh viên và hiển thị snackbar để khôi phục
+    recentlyDeletedStudent = student
+    recentlyDeletedPosition = position
+    students.removeAt(position)
+    studentAdapter.notifyItemRemoved(position)
+    showUndoSnackbar()
+  }
+
+  // Hiển thị snackbar cho phép khôi phục sinh viên bị xóa
+  private fun showUndoSnackbar() {
+    Snackbar.make(findViewById(R.id.main), "Student deleted", Snackbar.LENGTH_LONG)
+      .setAction("Undo") {
+        recentlyDeletedStudent?.let {
+          students.add(recentlyDeletedPosition, it)
+          studentAdapter.notifyItemInserted(recentlyDeletedPosition)
+        }
+      }
+      .show()
   }
 
   private fun showAddEditDialog(student: StudentModel? = null, position: Int = -1) {
@@ -84,26 +139,18 @@ class MainActivity : AppCompatActivity() {
       .show()
   }
 
-  private fun onEditClicked(student: StudentModel, position: Int) {
-    showAddEditDialog(student, position)
+  override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    menuInflater.inflate(R.menu.option_menu, menu)
+    return true
   }
 
-  private fun onDeleteClicked(student: StudentModel, position: Int) {
-    recentlyDeletedStudent = student
-    recentlyDeletedPosition = position
-    students.removeAt(position)
-    studentAdapter.notifyItemRemoved(position)
-    showUndoSnackbar()
-  }
-
-  private fun showUndoSnackbar() {
-    Snackbar.make(findViewById(R.id.main), "Student deleted", Snackbar.LENGTH_LONG)
-      .setAction("Undo") {
-        recentlyDeletedStudent?.let {
-          students.add(recentlyDeletedPosition, it)
-          studentAdapter.notifyItemInserted(recentlyDeletedPosition)
-        }
+  override fun onOptionsItemSelected(item: MenuItem): Boolean {
+    return when (item.itemId) {
+      R.id.menu_add_new -> {
+        showAddEditDialog()
+        true
       }
-      .show()
+      else -> super.onOptionsItemSelected(item)
+    }
   }
 }

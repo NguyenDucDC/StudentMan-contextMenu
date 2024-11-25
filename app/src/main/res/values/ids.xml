@@ -1,0 +1,4 @@
+<resources>
+    <item name="context_edit" type="id" />
+    <item name="context_remove" type="id" />
+</resources>
